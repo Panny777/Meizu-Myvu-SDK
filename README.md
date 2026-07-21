@@ -108,7 +108,7 @@ client.addListener(new MyvuClient.Listener() {
         Log.i("app", "glasses battery = " + info.battery);
     }
 });
-client.connectAutoSearch();                       // or client.connect("2C:6F:4E:..:..:..")
+client.connectAutoSearch();                       // or client.connect("12:34:56:78:9A:BC")
 // once READY:
 client.openTeleprompter("Hello from the SDK", "Demo");
 client.setBrightness(8);

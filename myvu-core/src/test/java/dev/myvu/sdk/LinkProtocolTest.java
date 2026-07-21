@@ -81,9 +81,10 @@ public class LinkProtocolTest {
 
     @Test
     public void macHelpersAcceptCommonSeparators() {
-        byte[] expected = Hex.decode("2c6f4e00dc47");
-        assertArrayEquals(expected, DeviceId.macToBytes("2C:6F:4E:00:DC:47"));
-        assertArrayEquals(expected, DeviceId.macToBytes("2c-6f-4e-00-dc-47"));
-        assertEquals("2c6f4e00dc47", DeviceId.macToHex("2C:6F:4E:00:DC:47"));
+        // Synthetic address: the helpers only care about separators and case.
+        byte[] expected = Hex.decode("123456789abc");
+        assertArrayEquals(expected, DeviceId.macToBytes("12:34:56:78:9A:BC"));
+        assertArrayEquals(expected, DeviceId.macToBytes("12-34-56-78-9a-bc"));
+        assertEquals("123456789abc", DeviceId.macToHex("12:34:56:78:9A:BC"));
     }
 }
