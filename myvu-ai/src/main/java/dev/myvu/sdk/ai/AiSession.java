@@ -131,6 +131,21 @@ public class AiSession {
     /** True for a typed ask: no follow-up listening turn after the answer. */
     private boolean textMode;
 
+    /**
+     * Whether a spoken answer is followed by another listening turn.
+     *
+     * OFF by default, and that is a protocol limitation rather than caution.
+     * The official app does not decide when to keep listening -- its cloud NLU
+     * does, via an {@code isNextRecorded} flag carried in each answer. An SDK
+     * calling a plain LLM never receives that flag, so continuing is a guess,
+     * and a forced turn the glasses were never told to expect is what wedges
+     * them (turns 1-2 complete, turn 3 hangs). In the captured traffic the
+     * official app itself runs only 1-2 turns per conversation.
+     *
+     * Enable it to experiment if that signal ever becomes available.
+     */
+    private volatile boolean spokenFollowUpTurns;
+
     private final Runnable silenceTimeout = new Runnable() {
         @Override
         public void run() {
@@ -184,6 +199,14 @@ public class AiSession {
 
     public boolean isActive() {
         return active;
+    }
+
+    /**
+     * Opts into a listening turn after each spoken answer. Off by default --
+     * see {@link #spokenFollowUpTurns} for why the glasses cannot sustain it.
+     */
+    public void setSpokenFollowUpTurns(boolean enabled) {
+        this.spokenFollowUpTurns = enabled;
     }
 
     // ------------------------------------------------------------- attach
@@ -371,6 +394,9 @@ public class AiSession {
         stopRequested = false;
         textMode = false;
         turnCount = 0;
+        // Configure the glasses' assistant (continuous dialogue, ChatGPT card)
+        // before the first frame -- the config is what the card scene needs.
+        send(AiProtocol.assistantConfig());
         tts.init();
         startListening(triggerCode == AiProtocol.CODE_START_VR_REQ ? "button" : "wake word");
     }
@@ -512,6 +538,9 @@ public class AiSession {
             // VR_PROCESSION only AFTER the final caption, or the glasses drop
             // the caption frames entirely.
             send(AiProtocol.vrState(AiProtocol.VR_PROCESSION));
+            // Open the LLM scene EVERY turn: the btsnoop shows the official app
+            // sends a fresh 102 per sessionId, follow-ups included.
+            send(AiProtocol.chatQuery(sessionId, text));
             askAssistant(text);
             return;
         }
@@ -563,7 +592,13 @@ public class AiSession {
         if (!active) return;
         SdkLog.log("AI answer: " + answer);
 
-        send(AiProtocol.answerCard(answer));
+        // Commit the answer into the LLM card scene opened by chatQuery:
+        // status 1 then the final status 2.
+        send(AiProtocol.chatAnswer(sessionId, answer, 1));
+        send(AiProtocol.chatAnswer(sessionId, answer, 2));
+        // playState:1 = TTS started. A btsnoop of the official app shows it uses
+        // ONLY code 6 for play state here -- it does NOT send the 106 VR TTS
+        // states (3/4), and those extra frames wedge the glasses on a follow-up.
         send(AiProtocol.playState(AiProtocol.PLAY_STATE_START));
 
         tts.speak(answer, new TtsEngine.Callback() {
@@ -573,8 +608,9 @@ public class AiSession {
                 send(AiProtocol.playState(AiProtocol.PLAY_STATE_END));
                 send(AiProtocol.endTurn());
                 if (!success) SdkLog.warn("the answer could not be spoken aloud");
-                // A typed question is one-shot; a spoken one keeps listening.
-                if (textMode) finish(); else nextTurn();
+                // A typed question is always one-shot; spoken follow-ups are
+                // opt-in (see setSpokenFollowUpTurns).
+                if (textMode || !spokenFollowUpTurns) finish(); else nextTurn();
             }
         });
     }
@@ -596,14 +632,17 @@ public class AiSession {
                 stopRequested = false;
                 textMode = true;
                 turnCount = 0;
+                send(AiProtocol.assistantConfig());
                 tts.init();
                 sessionId = UUID.randomUUID().toString();
 
                 // Bring the glasses' AI page up and show the question as the
-                // caption, then hand off to the shared answer path.
+                // caption, open the LLM card scene, then hand off to the shared
+                // answer path.
                 send(AiProtocol.sessionAck(sessionId));
                 send(AiProtocol.asrResult(sessionId, question.trim(), true));
                 send(AiProtocol.vrState(AiProtocol.VR_PROCESSION));
+                send(AiProtocol.chatQuery(sessionId, question.trim()));
                 SdkLog.log("AI (typed): " + question.trim());
                 askAssistant(question.trim());
             }
@@ -629,6 +668,10 @@ public class AiSession {
             finish();
             return;
         }
+        // startListening mints a fresh sessionId and re-sends the code-4 ack,
+        // which is exactly how the official app opens each follow-up (verified
+        // in btsnoop: a new sessionId per turn). Nothing else belongs here -- in
+        // particular NOT VR_MULTI_WAKEUP, which the official app never sends.
         startListening("follow-up " + (turnCount + 1));
     }
 

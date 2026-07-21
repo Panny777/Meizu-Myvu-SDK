@@ -186,16 +186,36 @@ The glasses stream their mic continuously as **code:109** Opus frames (field 5 =
 enforce with real timers:
 
 ```
+code:2            assistant config (capability flags; before the first frame)
 code:4            session ack (arms an 8s timeout)
 code:104 type:1   VAD start (first audio; the only thing that clears the timeout)
 code:104 type:2   VAD end
 code:101 type:0   growing caption partials
 code:101 type:1   final caption
 code:106 (7)      VR_PROCESSION — only AFTER the final caption
-code:5            answer card / TTS text
+code:102          open the LLM card scene for this question (fresh per sessionId)
+code:122 base_status:1 then :2   commit the answer text into the card
 code:6 type:1/2   TTS play start / end
 code:107          idle / end of turn
 ```
+
+**The answer surface is the LLM card scene**, not `code:5`. `code:2`
+(`assistantConfig`) must enable `isChatGptCardDisplayEnable` and
+`isContinuousDialogueEnable` or the scene is never configured and a second
+answer crashes it. `code:102` is re-sent on every turn with a fresh `sessionId`
+— the official app does the same for follow-ups. The answer is then committed
+with `code:122` twice, `base_status` 1 then 2.
+
+Two things the official app notably does **not** do, both of which wedge the
+glasses if added: sending the `106` VR TTS states (3/4) around playback (only
+`code:6` is used), and sending `VR_MULTI_WAKEUP` at a turn boundary.
+
+**Multi-turn is capped by the protocol, not by choice.** The official app does
+not decide when to keep listening — its cloud NLU does, via an `isNextRecorded`
+flag carried in each answer. A client calling a plain LLM never receives that
+flag, so a forced follow-up the glasses were not told to expect hangs the
+session (turns 1–2 work, turn 3 wedges). The captured official app itself runs
+only 1–2 turns per conversation.
 
 Triggers from the glasses: **code:3 control:1** = AI button, **code:7** = wake
 word ("Hey Aicy"); **control:0** = button release / page close (ends at the next

@@ -62,15 +62,43 @@ public class AiProtocolTest {
     }
 
     @Test
-    public void answerCardCarriesTheTextAndMuteTimeout() throws Exception {
-        JSONObject p = parse(AiProtocol.answerCard("It is sunny."))
-                .getJSONObject("payload");
+    public void chatQueryOpensTheLlmSceneWithTheQuestion() throws Exception {
+        JSONObject message = parse(AiProtocol.chatQuery("sess-1", "Will it rain?"));
+        assertEquals(102, message.getInt("code"));
 
-        assertEquals("It is sunny.",
-                p.getJSONObject("ttsData").getString("text"));
-        assertTrue(p.getJSONObject("ttsData").getBoolean("isChatGpt"));
-        assertEquals(2000, p.getJSONObject("wakeupControl").getInt("muteTimeout"));
-        assertEquals(6, p.getJSONObject("wakeupControl").getInt("control"));
+        JSONObject payload = message.getJSONObject("payload");
+        assertEquals("sess-1", payload.getString("sessionId"));
+        assertEquals("llm", payload.getJSONObject("header").getString("namespace"));
+        assertEquals("Will it rain?",
+                payload.getJSONObject("payload").getString("query"));
+        assertFalse(payload.getJSONObject("payload").getBoolean("isNextRecorded"));
+    }
+
+    @Test
+    public void chatAnswerCarriesStreamingAndFinalStatus() throws Exception {
+        JSONObject streaming = parse(AiProtocol.chatAnswer("sess-1", "It is sunny.", 1));
+        JSONObject complete = parse(AiProtocol.chatAnswer("sess-1", "It is sunny.", 2));
+
+        assertEquals(122, streaming.getInt("code"));
+        assertEquals("It is sunny.", streaming.getJSONObject("payload").getString("answer"));
+        assertEquals("sess-1", streaming.getJSONObject("payload").getString("sessionId"));
+        assertEquals(1, streaming.getJSONObject("payload").getInt("base_status"));
+        assertEquals(2, complete.getJSONObject("payload").getInt("base_status"));
+    }
+
+    /**
+     * The card scene needs these flags configured or a follow-up answer crashes
+     * the glasses' ChatGPT scene.
+     */
+    @Test
+    public void assistantConfigEnablesTheCardAndContinuousDialogue() throws Exception {
+        JSONObject message = parse(AiProtocol.assistantConfig());
+        assertEquals(2, message.getInt("code"));
+
+        JSONObject p = message.getJSONObject("payload");
+        assertTrue(p.getBoolean("isChatGptCardDisplayEnable"));
+        assertTrue(p.getBoolean("isContinuousDialogueEnable"));
+        assertTrue(p.getBoolean("isAsrResultScreenEnable"));
     }
 
     /** The id here is the EMPTY STRING, not the session id. */
@@ -100,6 +128,10 @@ public class AiProtocolTest {
         assertEquals(7, AiProtocol.CODE_VOICE_WAKEUP_VR_REQ);
         assertEquals(0, AiProtocol.VR_CLOSE);
         assertEquals(7, AiProtocol.VR_PROCESSION);
+        // The LLM card scene.
+        assertEquals(2, AiProtocol.CODE_ASSISTANT_CONFIG);
+        assertEquals(102, AiProtocol.CODE_VUI);
+        assertEquals(122, AiProtocol.CODE_CHAT_GPT_RESPONSE);
         // The listening timeout we are racing against.
         assertEquals(8000, AiProtocol.TIMEOUT_LISTENING_MS);
     }

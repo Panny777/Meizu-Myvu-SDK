@@ -44,10 +44,10 @@ App `build.gradle` — the coordinate is `com.github.<owner>.<repo>:<module>:<ta
 
 ```groovy
 dependencies {
-    implementation 'com.github.Panny777.Meizu-Myvu-SDK:myvu-core:v0.2.1'
-    implementation 'com.github.Panny777.Meizu-Myvu-SDK:myvu-nav:v0.2.1'      // optional
-    implementation 'com.github.Panny777.Meizu-Myvu-SDK:myvu-ai:v0.2.1'       // optional
-    implementation 'com.github.Panny777.Meizu-Myvu-SDK:myvu-weather:v0.2.1'  // optional
+    implementation 'com.github.Panny777.Meizu-Myvu-SDK:myvu-core:v0.3.0'
+    implementation 'com.github.Panny777.Meizu-Myvu-SDK:myvu-nav:v0.3.0'      // optional
+    implementation 'com.github.Panny777.Meizu-Myvu-SDK:myvu-ai:v0.3.0'       // optional
+    implementation 'com.github.Panny777.Meizu-Myvu-SDK:myvu-weather:v0.3.0'  // optional
 }
 ```
 
@@ -171,8 +171,8 @@ own source, build a `Weather.Reading` yourself and call
 ### AI assistant (`myvu-ai`)
 
 The glasses stream their own microphone; the SDK runs the on-glasses protocol
-(VAD, captions, TTS play-state) and delegates recognition and answering to
-engines you provide:
+(VAD, captions, the **LLM answer card**, TTS play-state) and delegates
+recognition and answering to engines you provide:
 
 ```java
 AiSession ai = new AiSession(context, client,
@@ -185,6 +185,14 @@ ai.attach();                 // now responds to the glasses' AI button / wake wo
 The sample app ships Groq Whisper (`GroqSpeechToText`) and Claude
 (`ClaudeLanguageModel`) adapters as a reference. The SDK itself ships no cloud
 clients or API keys.
+
+Answers render in the glasses' **LLM card scene** (the same surface the official
+app uses), so no extra work is needed to display them.
+
+**One turn per trigger.** A spoken answer does not automatically start another
+listening turn, because the glasses expect an `isNextRecorded` signal that only
+the official cloud NLU produces — forcing a follow-up without it wedges the
+session. `ai.setSpokenFollowUpTurns(true)` opts in if you want to experiment.
 
 ## Keeping the connection alive
 
