@@ -1,0 +1,56 @@
+plugins {
+    alias(libs.plugins.android.library)
+    alias(libs.plugins.kotlin.android)
+    id 'maven-publish'
+}
+
+android {
+    namespace 'dev.myvu.sdk'
+    compileSdk 34
+
+    defaultConfig {
+        minSdk 26
+        consumerProguardFiles 'consumer-rules.pro'
+    }
+
+    lint {
+        // Consumers own runtime permissions; the SDK cannot self-check them all.
+        abortOnError false
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+
+    publishing {
+        singleVariant('release') {
+            withSourcesJar()
+        }
+    }
+}
+
+dependencies {
+    // The Kotlin facade exposes Flow types, so coroutines is part of the API surface.
+    api libs.kotlinx.coroutines.android
+
+    testImplementation libs.junit
+    // android.jar's org.json is a stub under JVM unit tests; use the real library.
+    testImplementation libs.org.json
+}
+
+afterEvaluate {
+    publishing {
+        publications {
+            release(MavenPublication) {
+                // group/version inherited from the root (see allprojects); JitPack
+                // serves this as com.github.<user>.myvu-android-sdk:myvu-core:<tag>.
+                from components.release
+                artifactId = 'myvu-core'
+            }
+        }
+    }
+}

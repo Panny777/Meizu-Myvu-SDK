@@ -1,0 +1,56 @@
+plugins {
+    alias(libs.plugins.android.application)
+}
+
+android {
+    namespace 'dev.myvu.sample'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'dev.myvu.sample'
+        minSdk 26
+        targetSdk 34
+        versionCode 1
+        versionName '0.1.0'
+
+        // Optional AI keys. Set claudeApiKey / groqApiKey in your ~/.gradle/
+        // gradle.properties (or -P flags) to enable the assistant; empty keys
+        // just leave the AI path disabled.
+        buildConfigField 'String', 'CLAUDE_API_KEY',
+                "\"${project.findProperty('claudeApiKey') ?: ''}\""
+        buildConfigField 'String', 'GROQ_API_KEY',
+                "\"${project.findProperty('groqApiKey') ?: ''}\""
+    }
+
+    buildTypes {
+        release {
+            // Minification stays ON here on purpose: the release build proves the
+            // SDK's consumer-rules.pro keeps the reflection paths alive under R8.
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    lint {
+        // Consumers own runtime permissions; the SDK cannot self-check them all.
+        abortOnError false
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+}
+
+dependencies {
+    implementation project(':myvu-core')
+    implementation project(':myvu-nav')
+    implementation project(':myvu-ai')
+
+    implementation libs.appcompat
+    implementation libs.material
+}

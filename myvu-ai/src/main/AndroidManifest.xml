@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Phone-mic capture path (SttSource); glasses-mic capture needs none. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+</manifest>
