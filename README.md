@@ -44,10 +44,10 @@ App `build.gradle` — the coordinate is `com.github.<owner>.<repo>:<module>:<ta
 
 ```groovy
 dependencies {
-    implementation 'com.github.Panny777.Meizu-Myvu-SDK:myvu-core:v0.2.0'
-    implementation 'com.github.Panny777.Meizu-Myvu-SDK:myvu-nav:v0.2.0'      // optional
-    implementation 'com.github.Panny777.Meizu-Myvu-SDK:myvu-ai:v0.2.0'       // optional
-    implementation 'com.github.Panny777.Meizu-Myvu-SDK:myvu-weather:v0.2.0'  // optional
+    implementation 'com.github.Panny777.Meizu-Myvu-SDK:myvu-core:v0.2.1'
+    implementation 'com.github.Panny777.Meizu-Myvu-SDK:myvu-nav:v0.2.1'      // optional
+    implementation 'com.github.Panny777.Meizu-Myvu-SDK:myvu-ai:v0.2.1'       // optional
+    implementation 'com.github.Panny777.Meizu-Myvu-SDK:myvu-weather:v0.2.1'  // optional
 }
 ```
 

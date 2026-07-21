@@ -1,2 +1,10 @@
 jdk:
   - openjdk17
+
+# JitPack's default command is `assemble publishToMavenLocal`, which also builds
+# the sample APK (R8 + dex). That is pure waste for a library release, and once
+# the fourth module was added it exhausted the build machine's disk ("No space
+# left on device"), taking the Android SDK install down with it. Publish only
+# the library modules instead.
+install:
+  - ./gradlew clean -Pgroup=com.github.Panny777 -Pversion=$VERSION -xtest -xlint :myvu-core:publishToMavenLocal :myvu-nav:publishToMavenLocal :myvu-ai:publishToMavenLocal :myvu-weather:publishToMavenLocal --console=plain
