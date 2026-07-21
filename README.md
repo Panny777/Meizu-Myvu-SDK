@@ -39,16 +39,17 @@ dependencyResolutionManagement {
 }
 ```
 
-App `build.gradle` (replace `<user>` with the GitHub owner and `<tag>` with a
-release tag, e.g. `v0.1.0`):
+App `build.gradle` — the coordinate is `com.github.<owner>.<repo>:<module>:<tag>`:
 
 ```groovy
 dependencies {
-    implementation 'com.github.<user>.myvu-android-sdk:myvu-core:<tag>'
-    implementation 'com.github.<user>.myvu-android-sdk:myvu-nav:<tag>'  // optional
-    implementation 'com.github.<user>.myvu-android-sdk:myvu-ai:<tag>'   // optional
+    implementation 'com.github.Panny777.Meizu-Myvu-SDK:myvu-core:v0.1.0'
+    implementation 'com.github.Panny777.Meizu-Myvu-SDK:myvu-nav:v0.1.0'  // optional
+    implementation 'com.github.Panny777.Meizu-Myvu-SDK:myvu-ai:v0.1.0'   // optional
 }
 ```
+
+[![JitPack](https://jitpack.io/v/Panny777/Meizu-Myvu-SDK.svg)](https://jitpack.io/#Panny777/Meizu-Myvu-SDK)
 
 Minimum SDK 26, compiled against SDK 34, Java 17.
 

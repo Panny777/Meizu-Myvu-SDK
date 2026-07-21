@@ -283,6 +283,13 @@ public class MyvuClient implements BleTransport.Listener, RelaySupervisor.Delega
         inbound.setAiTriggerListener(new InboundRouter.AiTriggerListener() {
             @Override
             public void onAiTrigger(int code, org.json.JSONObject payload) {
+                // The glasses' mic audio only flows over the app relay. With
+                // the relay down (its retry budget spent), a press listened to
+                // nothing and timed out with "0 packets in" -- so treat the
+                // press like the glasses asking for the relay back. The
+                // release (control:0) is not a moment audio is needed.
+                boolean release = payload != null && payload.optInt("control", 1) == 0;
+                if (!release && supervisor != null) supervisor.wake();
                 dispatchEvent(new GlassesEvent.AiTrigger(code, payload));
             }
         });
