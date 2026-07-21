@@ -18,12 +18,13 @@ a dependency-light core plus optional feature modules and a sample app.
 
 | Module | Artifact | What it adds | Extra dependencies |
 |---|---|---|---|
-| Core | `myvu-core` | Connection, pairing, teleprompter, notifications, settings, trackpad, queries, raw actions | Kotlin coroutines only |
+| Core | `myvu-core` | Connection, pairing, teleprompter, notifications, weather push, settings, trackpad, queries, raw actions | Kotlin coroutines only |
 | Nav | `myvu-nav` | Turn-by-turn HUD navigation | Google Play Services location (swappable) |
 | AI | `myvu-ai` | Voice assistant over the glasses' mic (pluggable STT / LLM / TTS) | none |
+| Weather | `myvu-weather` | Keeps the glasses' weather panel fed (Open-Meteo, no API key) | none |
 
-Only `myvu-core` is required. Add `myvu-nav` / `myvu-ai` if you want those
-features.
+Only `myvu-core` is required. Add `myvu-nav` / `myvu-ai` / `myvu-weather` if you
+want those features.
 
 ## Install (JitPack)
 
@@ -43,9 +44,10 @@ App `build.gradle` — the coordinate is `com.github.<owner>.<repo>:<module>:<ta
 
 ```groovy
 dependencies {
-    implementation 'com.github.Panny777.Meizu-Myvu-SDK:myvu-core:v0.1.0'
-    implementation 'com.github.Panny777.Meizu-Myvu-SDK:myvu-nav:v0.1.0'  // optional
-    implementation 'com.github.Panny777.Meizu-Myvu-SDK:myvu-ai:v0.1.0'   // optional
+    implementation 'com.github.Panny777.Meizu-Myvu-SDK:myvu-core:v0.2.0'
+    implementation 'com.github.Panny777.Meizu-Myvu-SDK:myvu-nav:v0.2.0'      // optional
+    implementation 'com.github.Panny777.Meizu-Myvu-SDK:myvu-ai:v0.2.0'       // optional
+    implementation 'com.github.Panny777.Meizu-Myvu-SDK:myvu-weather:v0.2.0'  // optional
 }
 ```
 
@@ -120,6 +122,8 @@ All available on both `MyvuClient` (Java) and `MyvuGlasses` (Kotlin):
 
 - **Teleprompter** — `openTeleprompter(text, title)`, `teleprompterHighlight(index, title)`
 - **Notifications** — `showNotification(title, body)`
+- **Weather** — `sendWeather(Weather.Reading)`; the glasses' `syncWeather` requests
+  arrive as `GlassesEvent.WeatherRequested`
 - **Settings** — `setBrightness` (0–10), `setVolume` (0–15), `toggleWifi`,
   `setZenMode`, `setAirMode`, `setWearDetection`, `setMusicTpControl`,
   `setScreenOffTime`, `setStandbyPosition` (0–3), `setDeviceName`, `setLanguage`
@@ -139,6 +143,30 @@ nav.start("Times Square");   // place name or "lat,lon"
 
 Use `LocationManagerSource` instead of `FusedLocationSource` to avoid Google
 Play Services, or pass a custom `RouteProvider` to use your own OSRM instance.
+
+### Weather (`myvu-weather`)
+
+The glasses have a weather panel and periodically ask the phone to fill it
+(`syncWeather`). `WeatherSync` answers those requests and refreshes every 30
+minutes, matching the official app's cadence:
+
+```java
+WeatherSync weather = new WeatherSync(client, new DeviceWeatherLocation(context));
+weather.attach();   // pushes on every connect + answers the glasses' requests
+```
+
+Pick where the reading is for:
+
+| Provider | Needs |
+|---|---|
+| `DeviceWeatherLocation(context)` | coarse location permission; no Play Services |
+| `PlaceWeatherLocation("Dar es Salaam")` | nothing — geocoded once, also takes `"lat,lon"` |
+| `FixedWeatherLocation(lat, lon, name)` | nothing |
+
+Data comes from **Open-Meteo**, chosen because it needs no API key. To use your
+own source, build a `Weather.Reading` yourself and call
+`client.sendWeather(reading)` — `myvu-core` owns the wire format, so
+`myvu-weather` is entirely optional.
 
 ### AI assistant (`myvu-ai`)
 

@@ -35,6 +35,16 @@ public abstract class GlassesEvent {
         }
     }
 
+    /**
+     * The glasses asked for a fresh weather push ({@code syncWeather}).
+     *
+     * They re-ask periodically and whenever their panel is opened. Answer it by
+     * sending a new {@code Weather} payload -- the myvu-weather module's
+     * WeatherSync does this for you.
+     */
+    public static final class WeatherRequested extends GlassesEvent {
+    }
+
     /** An asynchronous reply to a {@code query(subAction)} call. */
     public static final class QueryReply extends GlassesEvent {
         public final String subAction;

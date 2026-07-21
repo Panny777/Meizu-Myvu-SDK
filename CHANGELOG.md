@@ -6,6 +6,24 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+- **Weather support.** `myvu-core` gains the `weather` wire format
+  (`MyvuClient.sendWeather`) and surfaces the glasses' `syncWeather` requests as
+  `GlassesEvent.WeatherRequested`.
+- **New `myvu-weather` module** — `WeatherSync` keeps the glasses' weather panel
+  fed (push on connect, refresh every 30 min, retry after 30 s), backed by
+  Open-Meteo (no API key). Location comes from a swappable `WeatherLocation`:
+  `DeviceWeatherLocation` (platform LocationManager, no Play Services),
+  `PlaceWeatherLocation` (geocoded name or `"lat,lon"`) or
+  `FixedWeatherLocation`.
+
+### Fixed
+- AI voice capture on real hardware: wake the relay supervisor on an AI button
+  press, calibrate the VAD noise floor from quiet chunks only, clear the
+  no-speech timeout once speech starts, and open mic capture only after the Opus
+  decoder is live.
+- Tests and docs no longer carry a real device MAC.
+
 ## [0.1.0] — 2026-07-21
 
 Initial release. Extracted from the working reverse-engineered Android client

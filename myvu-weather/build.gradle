@@ -1,0 +1,49 @@
+plugins {
+    alias(libs.plugins.android.library)
+    id 'maven-publish'
+}
+
+android {
+    namespace 'dev.myvu.sdk.weather'
+    compileSdk 34
+
+    defaultConfig {
+        minSdk 26
+    }
+
+    lint {
+        // Consumers own runtime permissions; the SDK cannot self-check them all.
+        abortOnError false
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    publishing {
+        singleVariant('release') {
+            withSourcesJar()
+        }
+    }
+}
+
+dependencies {
+    api project(':myvu-core')
+    // Deliberately no Play Services: DeviceWeatherLocation uses the platform
+    // LocationManager, so weather never drags in a location dependency.
+
+    testImplementation libs.junit
+    testImplementation libs.org.json
+}
+
+afterEvaluate {
+    publishing {
+        publications {
+            release(MavenPublication) {
+                from components.release
+                artifactId = 'myvu-weather'
+            }
+        }
+    }
+}

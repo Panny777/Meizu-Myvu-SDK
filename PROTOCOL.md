@@ -145,6 +145,40 @@ cmd 70 and regenerated every session. It is resolved by SDP
 re-request via cmd 71; `RelaySupervisor` reconnects in place with a fresh
 sequencer and replays the init burst.
 
+## Weather
+
+Reverse-engineered from the official app's `WeatherWorker` / `ArWeatherModel`.
+Sent to the **launcher** as:
+
+```
+{"action":"weather","data":{ …ArWeatherModel… }}
+```
+
+Unlike the `system` family there is **no nested `data.action`** — `data` *is* the
+model. Wire keys are the model's Java field names verbatim, because the official
+app serialises with plain Gson and no `@SerializedName`. Gson also omits null
+fields by default, which is the shape the glasses were built against: an unknown
+value must be **absent**, not JSON `null`.
+
+Fields: `temp`, `weather` (condition text), `dayTempMax`, `dayTempMin`,
+`areaName`, `iconCode`, `lastUpdate`, `sunriseTime`, `sunsetTime`, `aqi`,
+`quality`, `futureDay[]` (each `date`, `dayTempMax`, `dayTempMin`, `weather`,
+`iconCode`). Temperatures are integer degrees **Celsius** — the official app
+hardcodes `unit=metric` and there is no unit flag to negotiate. Timestamps are
+`yyyy-MM-dd HH:mm:ss`. `iconCode`, `aqi`, `quality` and `futureDay` are
+non-nullable in the model and are always sent.
+
+**Icon codes** live in the glasses' launcher, not the phone APK, so they could
+not be read out. Three are attested from the official app's own mock payload —
+`1` 多云 (cloudy), `2` 阴 (overcast), `7` 小雨 (light rain) — and they land exactly
+where the standard Chinese/CMA weather-icon numbering puts them, so the rest of
+`WeatherCodes` follows that table as an educated guess.
+
+The glasses request a refresh with `{"action":"syncWeather"}`. Curiously the
+official app parses this and then drops it (its handler callback is never
+assigned), so on a stock phone weather only ever arrives from the app's own
+30-minute timer. The SDK answers it.
+
 ## AI assistant (code map)
 
 The glasses stream their mic continuously as **code:109** Opus frames (field 5 =

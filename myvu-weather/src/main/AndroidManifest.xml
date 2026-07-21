@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Open-Meteo forecast + geocoding lookups. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Only needed by DeviceWeatherLocation; the fixed/place providers work
+         without any location permission at all. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+</manifest>

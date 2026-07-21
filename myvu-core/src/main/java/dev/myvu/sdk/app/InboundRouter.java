@@ -1,6 +1,7 @@
 package dev.myvu.sdk.app;
 
 import dev.myvu.sdk.app.feature.ClockSync;
+import dev.myvu.sdk.app.feature.Weather;
 import dev.myvu.sdk.util.SdkLog;
 
 import org.json.JSONException;
@@ -33,8 +34,14 @@ public class InboundRouter {
         void onAiTrigger(int code, JSONObject payload);
     }
 
+    /** Fired when the glasses ask for a fresh weather push. */
+    public interface WeatherRequestListener {
+        void onWeatherRequested();
+    }
+
     private final Sender sender;
     private AiTriggerListener aiListener;
+    private WeatherRequestListener weatherListener;
 
     public InboundRouter(Sender sender) {
         this.sender = sender;
@@ -42,6 +49,10 @@ public class InboundRouter {
 
     public void setAiTriggerListener(AiTriggerListener listener) {
         this.aiListener = listener;
+    }
+
+    public void setWeatherRequestListener(WeatherRequestListener listener) {
+        this.weatherListener = listener;
     }
 
     /** Inspects one inbound relay body and answers anything that needs answering. */
@@ -55,6 +66,7 @@ public class InboundRouter {
             }
             checkLaunchAppRequest(obj);
             checkTimeSyncRequest(obj);
+            checkWeatherRequest(obj);
             checkAiTrigger(obj);
         }
     }
@@ -107,6 +119,20 @@ public class InboundRouter {
         } catch (JSONException e) {
             SdkLog.error("could not build the time sync reply", e);
         }
+    }
+
+    /**
+     * The glasses ask for fresh weather with {"action":"syncWeather"}.
+     *
+     * The official app parses this and then throws it away -- its handler
+     * callback is never assigned anywhere in the APK -- so on a stock phone the
+     * glasses only ever get weather from the app's own 30-minute timer. We
+     * actually answer it, which is strictly better behaviour.
+     */
+    private void checkWeatherRequest(JSONObject msg) {
+        if (!Weather.isSyncRequest(msg)) return;
+        SdkLog.log("<- the glasses asked for weather");
+        if (weatherListener != null) weatherListener.onWeatherRequested();
     }
 
     /**

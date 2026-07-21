@@ -15,6 +15,7 @@ import dev.myvu.sdk.app.feature.ClockSync;
 import dev.myvu.sdk.app.feature.SystemSettings;
 import dev.myvu.sdk.app.feature.Teleprompter;
 import dev.myvu.sdk.app.feature.Trackpad;
+import dev.myvu.sdk.app.feature.Weather;
 import dev.myvu.sdk.connection.AudioProfiles;
 import dev.myvu.sdk.connection.RelaySupervisor;
 import dev.myvu.sdk.crypto.StarryCrypto;
@@ -291,6 +292,14 @@ public class MyvuClient implements BleTransport.Listener, RelaySupervisor.Delega
                 boolean release = payload != null && payload.optInt("control", 1) == 0;
                 if (!release && supervisor != null) supervisor.wake();
                 dispatchEvent(new GlassesEvent.AiTrigger(code, payload));
+            }
+        });
+        // The glasses re-ask for weather periodically and when their panel
+        // opens; myvu-weather's WeatherSync listens for this and pushes.
+        inbound.setWeatherRequestListener(new InboundRouter.WeatherRequestListener() {
+            @Override
+            public void onWeatherRequested() {
+                dispatchEvent(new GlassesEvent.WeatherRequested());
             }
         });
     }
@@ -1270,6 +1279,21 @@ public class MyvuClient implements BleTransport.Listener, RelaySupervisor.Delega
             sendAction(SystemSettings.query(subAction));
         } catch (Exception e) {
             SdkLog.error("query failed", e);
+        }
+    }
+
+    /**
+     * Pushes a weather reading to the glasses' weather panel.
+     *
+     * Routed to the launcher, which is where the official app sends it. The
+     * myvu-weather module builds these for you from a forecast provider; use
+     * this directly if you already have weather data of your own.
+     */
+    public void sendWeather(Weather.Reading reading) {
+        try {
+            sendAction(Weather.build(reading));
+        } catch (Exception e) {
+            SdkLog.error("could not build the weather payload", e);
         }
     }
 
